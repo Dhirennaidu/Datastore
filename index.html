@@ -3,48 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IndexedDB CRUD Operations</title>
+    <title>Cross-System CRUD</title>
     <style>
-        body {
-            font-family: sans-serif;
-        }
-        #data-list {
-            list-style: none;
-            padding: 0;
-        }
-        #data-list li {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .actions button {
-            margin-left: 5px;
-            cursor: pointer;
-        }
-        #edit-form {
-            display: none;
-            margin-top: 20px;
-            border: 1px solid #eee;
-            padding: 15px;
-        }
-        #edit-form label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        #edit-form input[type="text"],
-        #edit-form input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
+        /* ... (same CSS as before) ... */
     </style>
 </head>
 <body>
-    <h1>IndexedDB CRUD Operations</h1>
+    <h1>Cross-System CRUD</h1>
 
     <div id="input-section">
         <h2>Add New Item</h2>
@@ -58,7 +23,7 @@
     <div id="data-display">
         <h2>Items</h2>
         <ul id="data-list">
-            </ul>
+        </ul>
     </div>
 
     <div id="edit-form">
@@ -74,141 +39,104 @@
         </form>
     </div>
 
+    <script src="your-baas-sdk.js"></script>
     <script>
-      const dbName = 'itemDatabase';
-const objectStoreName = 'items';
-let db;
-const dataList = document.getElementById('data-list');
-const editForm = document.getElementById('edit-form');
-const updateForm = document.getElementById('update-form');
-let currentItemId;
+        // Initialize your BaaS (replace with your provider's initialization)
+// Example for a hypothetical 'BaaS' object:
+// const baas = new BaasClient({ apiKey: 'YOUR_API_KEY' });
+const collectionName = 'items';
 
-// Initialize IndexedDB
-const request = indexedDB.open(dbName, 1);
-
-request.onerror = (event) => {
-    console.error('Error opening database:', event.target.errorCode);
-};
-
-request.onsuccess = (event) => {
-    db = event.target.result;
-    console.log('Database opened successfully.');
-    displayItems();
-};
-
-request.onupgradeneeded = (event) => {
-    const db = event.target.result;
-    if (!db.objectStoreNames.contains(objectStoreName)) {
-        const objectStore = db.createObjectStore(objectStoreName, { keyPath: 'id', autoIncrement: true });
-        objectStore.createIndex('name', 'name', { unique: false });
-        console.log('Object store created.');
-    }
-};
-
-// CREATE operation
-function addItem() {
+// CREATE
+async function addItem() {
     const nameInput = document.getElementById('name');
     const valueInput = document.getElementById('value');
     const name = nameInput.value.trim();
     const value = parseInt(valueInput.value);
 
     if (name) {
-        const transaction = db.transaction([objectStoreName], 'readwrite');
-        const objectStore = transaction.objectStore(objectStoreName);
-        const newItem = { name: name, value: value };
-        const addRequest = objectStore.add(newItem);
-
-        addRequest.onsuccess = () => {
-            console.log('Item added successfully.');
+        try {
+            const newItem = { name: name, value: value };
+            const response = await baas.collection(collectionName).add(newItem);
+            console.log('Item added:', response);
             nameInput.value = '';
             valueInput.value = '';
-            displayItems();
-        };
-
-        addRequest.onerror = (event) => {
-            console.error('Error adding item:', event.target.errorCode);
-        };
+            fetchItems(); // Refresh the list
+        } catch (error) {
+            console.error('Error adding item:', error);
+        }
     } else {
         alert('Please enter a name.');
     }
 }
 
-// READ operation (display all items)
-function displayItems() {
-    dataList.innerHTML = ''; // Clear the current list
-    const transaction = db.transaction([objectStoreName], 'readonly');
-    const objectStore = transaction.objectStore(objectStoreName);
-    const getAllRequest = objectStore.getAll();
-
-    getAllRequest.onsuccess = (event) => {
-        const items = event.target.result;
-        items.forEach(item => {
+// READ (fetch all items from BaaS)
+async function fetchItems() {
+    dataList.innerHTML = '';
+    try {
+        const items = await baas.collection(collectionName).get();
+        items.forEach(itemData => {
+            const item = { id: itemData.id, ...itemData.data() };
             const listItem = document.createElement('li');
             listItem.innerHTML = `
                 <span>${item.name}: ${item.value}</span>
                 <div class="actions">
-                    <button onclick="editItem(${item.id})">Edit</button>
-                    <button onclick="deleteItem(${item.id})">Delete</button>
+                    <button onclick="editItem('${item.id}')">Edit</button>
+                    <button onclick="deleteItem('${item.id}')">Delete</button>
                 </div>
             `;
             dataList.appendChild(listItem);
         });
-    };
-
-    getAllRequest.onerror = (event) => {
-        console.error('Error fetching items:', event.target.errorCode);
-    };
+    } catch (error) {
+        console.error('Error fetching items:', error);
+    }
 }
 
-// UPDATE operation (show edit form)
-function editItem(id) {
-    currentItemId = id;
-    editForm.style.display = 'block';
-
-    const transaction = db.transaction([objectStoreName], 'readonly');
-    const objectStore = transaction.objectStore(objectStoreName);
-    const getRequest = objectStore.get(id);
-
-    getRequest.onsuccess = (event) => {
-        const item = event.target.result;
-        if (item) {
-            document.getElementById('edit-name').value = item.name;
-            document.getElementById('edit-value').value = item.value;
-            document.getElementById('edit-id').value = item.id;
+// READ (fetch single item for editing)
+async function getItem(id) {
+    try {
+        const doc = await baas.collection(collectionName).doc(id).get();
+        if (doc.exists) {
+            return { id: doc.id, ...doc.data() };
         } else {
-            console.log('Item not found for editing.');
-            editForm.style.display = 'none';
+            console.log('Item not found.');
+            return null;
         }
-    };
-
-    getRequest.onerror = (event) => {
-        console.error('Error fetching item for edit:', event.target.errorCode);
-    };
+    } catch (error) {
+        console.error('Error fetching item:', error);
+        return null;
+    }
 }
 
-// UPDATE operation (submit updated data)
-function updateItem() {
+// UPDATE (show edit form)
+async function editItem(id) {
+    editForm.style.display = 'block';
+    const item = await getItem(id);
+    if (item) {
+        document.getElementById('edit-name').value = item.name;
+        document.getElementById('edit-value').value = item.value;
+        document.getElementById('edit-id').value = item.id;
+    } else {
+        editForm.style.display = 'none';
+    }
+}
+
+// UPDATE (submit updated data to BaaS)
+async function updateItem() {
     const editNameInput = document.getElementById('edit-name');
     const editValueInput = document.getElementById('edit-value');
-    const id = parseInt(document.getElementById('edit-id').value);
+    const id = document.getElementById('edit-id').value;
     const updatedName = editNameInput.value.trim();
     const updatedValue = parseInt(editValueInput.value);
 
     if (updatedName) {
-        const transaction = db.transaction([objectStoreName], 'readwrite');
-        const objectStore = transaction.objectStore(objectStoreName);
-        const updatedItem = { id: id, name: updatedName, value: updatedValue };
-        const updateRequest = objectStore.put(updatedItem);
-
-        updateRequest.onsuccess = () => {
+        try {
+            await baas.collection(collectionName).doc(id).update({ name: updatedName, value: updatedValue });
             console.log('Item updated successfully.');
             editForm.style.display = 'none';
-            displayItems();
-        };
-
-        updateRequest.onerror = (event) => {
-            console.error('Error updating item:', event.target.errorCode);
-        };
+            fetchItems();
+        } catch (error) {
+            console.error('Error updating item:', error);
+        }
     } else {
         alert('Please enter a name to update.');
     }
@@ -218,23 +146,27 @@ function cancelEdit() {
     editForm.style.display = 'none';
 }
 
-// DELETE operation
-function deleteItem(id) {
+// DELETE
+async function deleteItem(id) {
     if (confirm('Are you sure you want to delete this item?')) {
-        const transaction = db.transaction([objectStoreName], 'readwrite');
-        const objectStore = transaction.objectStore(objectStoreName);
-        const deleteRequest = objectStore.delete(id);
-
-        deleteRequest.onsuccess = () => {
+        try {
+            await baas.collection(collectionName).doc(id).delete();
             console.log('Item deleted successfully.');
-            displayItems();
-        };
-
-        deleteRequest.onerror = (event) => {
-            console.error('Error deleting item:', event.target.errorCode);
-        };
+            fetchItems();
+        } catch (error) {
+            console.error('Error deleting item:', error);
+        }
     }
 }
+
+// Initial fetch of data
+fetchItems();
+
+// Optional: Set up real-time listeners if your BaaS supports it
+// baas.collection(collectionName).onSnapshot((snapshot) => {
+//     console.log('Data changed:', snapshot);
+//     fetchItems(); // Re-fetch data on changes
+// });
     </script>
 </body>
 </html>
