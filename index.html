@@ -3,129 +3,408 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>localStorage CRUD with JSON Array</title>
+    <title>Responsive Dashboard</title>
     <style>
-        body { font-family: sans-serif; }
-        #data-list { list-style: none; padding: 0; }
-        #data-list li { border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; }
-        .actions button { margin-left: 5px; cursor: pointer; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .card-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .card-change {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .positive {
+            color: #4caf50;
+        }
+
+        .negative {
+            color: #f44336;
+        }
+
+        .dashboard-table {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #555;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-pending {
+            background-color: #fff8e1;
+            color: #ff8f00;
+        }
+
+        .status-completed {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background-color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background-color: #1976d2;
+            color: white;
+            border-color: #1976d2;
+        }
+
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+        }
+        .button-list-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .button-list-title {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .button-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .button-list button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: #fff;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .button-list button:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .button-list button.active {
+            background-color: #1976d2;
+            color: white;
+            box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
+        }
+
+        .button-list button.active:hover {
+            background-color: #1565c0;
+            box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+        }
+
+        .button-list button i {
+            margin-right: 8px;
+        }
+
+        .content-area {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .button-list {
+                gap: 8px;
+            }
+            
+            .button-list button {
+                padding: 8px 15px;
+                font-size: 13px;
+                flex-grow: 1;
+                white-space: normal;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .button-list {
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .button-list button {
+                width: 100%;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>localStorage CRUD with JSON Array</h1>
-
-    <div id="input-section">
-        <h2>Add New Item</h2>
-        <label for="name">Name:</label>
-        <input type="text" id="name"><br><br>
-        <label for="value">Value:</label>
-        <input type="number" id="value"><br><br>
-        <button onclick="addItem()">Add Item</button>
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h1>Dashboard Of StorageTank</h1>
+            <div class="user-profile">
+                <span>John Doe</span>
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User Profile">
+            </div>
     </div>
+    <div class="button-list-container">
+      <div class="button-list" id="filterButtons">
+          <button  data-filter="all">
+              Dashboard
+          </button>
+          <button data-filter="recent">
+            Time spend
+          </button>
+        
+          <button data-filter="pending">
+             Add New Tank
+          </button>
+          <button data-filter="archived">
+             Go To List
+          </button>
+      </div>
 
-    <div id="data-display">
-        <h2>Items</h2>
-        <ul id="data-list"></ul>
+     
+        <div class="cards-container">
+            <div class="card" style="background-color: yellow;">
+                <div class="card-header">
+                    <span class="card-title">Total Storage Tank Use</span>
+                    
+                </div>
+                <div class="card-value">118</div>
+                
+            </div>
+
+            <div class="card" style="background-color: pink;">
+                <div class="card-header">
+                    <span class="card-title">To be Clean</span>
+                  
+                </div>
+                <div class="card-value">15</div>
+              
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Filled</span>
+                   
+                </div>
+                <div class="card-value">856</div>
+               
+            </div>
+
+            <div class="card" style="background-color: #388e3c;color:white;">
+                <div class="card-header" style="color:white;">
+                    <span class="card-title" style="color:white;">Under-Filling</span>
+                   
+                </div>
+                <div class="card-value" style="color:white;">40</div>
+              
+            </div>
+
+            <div class="card" style="background-color: #2cf3c8;">
+                <div class="card-header">
+                    <span class="card-title">Clean</span>
+                    
+                </div>
+                <div class="card-value">4m 23s</div>
+              
+            </div>
+
+            <div class="card" style="background-color:#1ae7f2">
+                <div class="card-header">
+                    <span class="card-title">Recycle</span>
+                   
+                </div>
+                <div class="card-value">124</div>
+              
+            </div>
+            <div class="card" style="background-color:#f27b1a">
+              <div class="card-header">
+                  <span class="card-title">Under-cleaning</span>
+                 
+              </div>
+              <div class="card-value">124</div>
+            
+          </div>
+            <div class="card" style="background-color:#541af2">
+              <div class="card-header">
+                  <span class="card-title" style="color:white;">Current Update</span>
+                 
+              </div>
+              <div class="card-value" style="color:white;">Total:118/Update:0</div>
+            
+          </div>
+          </div>
+        
+     
+        <div class="dashboard-table">
+            <h2>Total Storage Tank In this location (Total:112)</h2><br>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Total tanks</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Table data will be populated by JavaScript -->
+                </tbody>
+            </table>
+          
+        </div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'myAppData';
-
-        function loadData() {
-            const storedData = localStorage.getItem(STORAGE_KEY);
-            return storedData ? JSON.parse(storedData) : [];
-        }
-
-        function saveData(data) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        }
-
-        let dataArray = loadData();
-        console.log(dataArray);
-        function generateId() {
-            return Math.random().toString(36).substring(2, 15);
-        }
-
-        function displayData() {
-            const dataList = document.getElementById('data-list');
-            dataList.innerHTML = '';
-            dataArray.forEach(item => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `
-                    <span>${item.name}: ${item.value} (ID: ${item.id})</span>
-                    <div class="actions">
-                        <button onclick="editItem('${item.id}')">Edit</button>
-                        <button onclick="deleteItem('${item.id}')">Delete</button>
-                    </div>
-                `;
-                dataList.appendChild(listItem);
-            });
-        }
-
-        function addItem() {
-            const nameInput = document.getElementById('name');
-            const valueInput = document.getElementById('value');
-            const name = nameInput.value.trim();
-            const value = parseInt(valueInput.value);
-
-            if (name) {
-                const newItem = { id: generateId(), name: name, value: value };
-                dataArray.push(newItem);
-                saveData(dataArray);
-                nameInput.value = '';
-                valueInput.value = '';
-                displayData();
-            } else {
-                alert('Please enter a name.');
-            }
-        }
-
-        function editItem(id) {
-            const itemToEdit = dataArray.find(item => item.id === id);
-            if (itemToEdit) {
-                const nameInput = document.getElementById('name');
-                const valueInput = document.getElementById('value');
-                nameInput.value = itemToEdit.name;
-                valueInput.value = itemToEdit.value;
-
-                const addButton = document.querySelector('#input-section button');
-                addButton.textContent = 'Update Item';
-                addButton.onclick = function() {
-                    updateItem(id);
-                };
-            }
-        }
-
-        function updateItem(id) {
-            const nameInput = document.getElementById('name');
-            const valueInput = document.getElementById('value');
-            const name = nameInput.value.trim();
-            const value = parseInt(valueInput.value);
-
-            if (name) {
-                dataArray = dataArray.map(item =>
-                    item.id === id ? { ...item, name: name, value: value } : item
-                );
-                saveData(dataArray);
-                nameInput.value = '';
-                valueInput.value = '';
-                const addButton = document.querySelector('#input-section button');
-                addButton.textContent = 'Add Item';
-                addButton.onclick = addItem;
-                displayData();
-            } else {
-                alert('Please enter a name.');
-            }
-        }
-
-        function deleteItem(id) {
-            dataArray = dataArray.filter(item => item.id !== id);
-            saveData(dataArray);
-            displayData();
-        }
-
-        // Initial data load and display
-        displayData();
+      
     </script>
 </body>
 </html>
